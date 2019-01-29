@@ -1,0 +1,496 @@
+<apex:page controller="CCG_SplitOpportunityCtlr" >
+    <apex:includeScript value="//ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"/>
+    <apex:includeScript value="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0/handlebars.js"/>
+    <apex:includeScript value="{!URLFOR($Resource.ALJS310)}" />
+    <script src="../../soap/ajax/37.0/connection.js" type="text/javascript" />
+    
+    <apex:slds />
+        <style>
+        	.disablePill{
+                pointer-events: none;
+                background: #CCC; 
+                color: #333;
+            }
+    		.errorMessage{
+                color: red;
+            }
+        </style>
+        
+        <script id="splitRows" type="text/x-handlebars-template">
+            <div class="slds-grid splitedRows slds-gutters" style="padding:8px;">
+                <div class="slds-form-element slds-lookup slds-col" style="width: 50%;">
+                    <label class="slds-form-element__label" for="filter-value"></label>
+                </div>
+                        <div class="slds-form-element slds-lookup slds-col" style="width: 50%;">
+                        	<div class="slds-form-element__control">
+                        		<input type="text" id="{{amountId}}" class="slds-input amount" placeholder="Amount" onblur="checkAndRemoveErrorMsg($(this)); return false;"/>
+                        	</div>
+                        	<div class="slds-form-element__help slds-hide errorMessage" id="error-{{amountId}}">{!$Label.CCG_Required_Field_Error}</div>
+                        </div>
+                        <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                        	<div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                        		<svg aria-hidden="true" class="slds-input__icon slds-icon-text-default">
+                        			<use xlink:href="/apexpages/slds/latest//assets/icons/utility-sprite/svg/symbols.svg#search"></use>
+                        		</svg>
+                        		<input id="{{verwenId}}" autocomplete="off" class="slds-lookup__search-input slds-input verwendungsField" type="text" aria-autocomplete="list"
+                        			role="combobox" aria-expanded="false" aria-activedescendant="" placeholder="Verwendungszweck"
+                        			onblur="removeErrorMsg($(this)); return false;"/>
+                       	 	</div>
+                        	<div class="slds-form-element__help slds-hide errorMessage" id="error-{{verwenId}}">{!$Label.CCG_Required_Field_Error}</div>
+                        </div>
+                        <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                        	<div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                        		<svg aria-hidden="true" class="slds-input__icon slds-icon-text-default">
+                        			<use xlink:href="/apexpages/slds/latest//assets/icons/utility-sprite/svg/symbols.svg#search"></use>
+                        		</svg>
+                        		<input id="{{aktionId}}" autocomplete="off" class="slds-lookup__search-input slds-input aktionsField" type="text" aria-autocomplete="list"
+                        					role="combobox" aria-expanded="false" aria-activedescendant="" placeholder="{!$Label.CBM_Aktions}"
+                        					onblur="removeErrorMsg($(this)); return false;"/>
+                        	</div>
+                        	<div class="slds-form-element__help slds-hide errorMessage" id="error-{{aktionId}}">{!$Label.CCG_Required_Field_Error}</div>
+                        </div>
+                        <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                        	<div class="slds-form-element__control slds-input-has-icon slds-input-has-icon--right">
+                        		<svg aria-hidden="true" class="slds-input__icon slds-icon-text-default">
+                        			<use xlink:href="/apexpages/slds/latest//assets/icons/utility-sprite/svg/symbols.svg#search"></use>
+                        		</svg>
+                        		<input id="{{contactId}}" autocomplete="off" class="slds-lookup__search-input slds-input pContactField" type="text" aria-autocomplete="list"
+                        			role="combobox" aria-expanded="false" aria-activedescendant="" placeholder="Contact"
+                                    onblur="removeErrorMsg($(this)); return false;"/>
+                        	</div>
+                        	<div class="slds-form-element__help slds-hide errorMessage" id="error-{{contactId}}">{!$Label.CCG_Required_Field_Error}</div>
+                        </div>
+                        	<button class="slds-button slds-button_icon" id="{{closeRowId}}" onclick="closeRow($(this)); return false;">
+                                <svg class="slds-button__icon" aria-hidden="true">
+                                    <use xlink:href="/apexpages/slds/latest//assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+                                </svg>
+                            	<span class="slds-assistive-text">Description of icon when needed</span>
+                        </button>
+                  </div>
+                  </script>
+    
+    <div style="margin: 2%;"  xmlns:xlink="http://www.w3.org/1999/xlink">
+        <div class="slds-grid slds-gutters" style="font-weight: bold;">
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;">
+                <label class="slds-form-element__label" for="filter-value">{!$Label.CCG_Opportunity_Name}</label>
+            </div>
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;">
+                <label class="slds-form-element__label" for="filter-value">{!$Label.CCG_Amount}</label>
+            </div>
+            
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                <label class="slds-form-element__label" for="{{id}}">{!$Label.CCG_Verwendungszweck}</label>
+            </div>
+            
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                <label class="slds-form-element__label" for="{{id}}">{!$Label.CCG_Aktioncode}</label>
+            </div>
+            
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                <label class="slds-form-element__label" for="{{id}}">{!$Label.CCG_Contact}</label>
+            </div>
+            <span class="slds-icon_container slds-icon-utility-announcement" title="Description of icon when needed">
+                <svg class="slds-icon slds-icon-text-default" aria-hidden="true">
+                    <use xlink:href="/apexpages/slds/latest//assets/icons/utility-sprite/svg/symbols.svg#"></use>
+                </svg>
+                <span class="slds-assistive-text">Description of icon when needed</span>
+            </span>
+        </div>
+        
+        <div class="slds-grid slds-gutters">
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;">
+                <label class="slds-form-element__label" for="filter-value" id="oppName">Name</label>
+            </div>
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;">
+                <label class="slds-form-element__label" for="filter-value" id="oppAmt"></label>
+            </div>
+            
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                <label class="slds-form-element__label" for="{{id}}" id="oppVerwen"></label>
+            </div>
+            
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                <label class="slds-form-element__label" for="{{id}}"  id="oppAktion"></label>
+            </div>
+            
+            <div class="slds-form-element slds-lookup slds-col" style="width: 50%;" data-select="single" data-scope="single">
+                <label class="slds-form-element__label" for="{{id}}" id="oppContact"></label>
+            </div>
+            <span class="slds-icon_container slds-icon-utility-announcement" title="Description of icon when needed">
+                <svg class="slds-icon slds-icon-text-default" aria-hidden="true">
+                    <use xlink:href="/apexpages/slds/latest//assets/icons/utility-sprite/svg/symbols.svg#"></use>
+                </svg>
+                <span class="slds-assistive-text">Description of icon when needed</span>
+            </span>
+        </div>
+        
+        <!-- SPINNER -->
+        <div id="spinner" class="slds-spinner_container slds-is-relative slds-hide">
+            <div role="status" class="slds-spinner slds-spinner--large slds-spinner--brand">
+                <div class="slds-spinner__dot-a"></div>
+                <div class="slds-spinner__dot-b"></div>
+            </div>
+        </div>
+        <!-- / SPINNER -->
+        
+        <div class="slds-notify_container" id="showAlert" style="display:none;">
+            <div class="slds-notify slds-notify--toast" role="alert">
+                <span class="slds-assistive-text" id="alertHead"></span>
+                <button class="slds-button slds-notify__close slds-button--icon-inverse" title="Close"
+                        onclick="$('#showAlert').slideUp('slow');" style="font-size: 20px;">
+                    &times;
+                    <span class="slds-assistive-text">{!$Label.CBM_Close}</span>
+                </button>
+                <div class="slds-notify__content">
+                    <h2 class="slds-text-heading--small" id="alertContent"></h2>
+                </div>
+            </div>
+        </div>
+        
+        <div id="splitResults"></div>
+        <button class="slds-button slds-button_neutral slds-m-top_medium" id="addRow">
+            <svg class="slds-button__icon slds-button__icon_left " aria-hidden="true">
+                <use xmlns:xlink="http://www.w3.org/1999/xlink" xlink:href="/apexpages/slds/latest//assets/icons/utility-sprite/svg/symbols.svg#add" />
+            </svg>
+            {!$Label.CCG_Add_Row}
+        </button>
+        <button class="slds-button slds-button_brand slds-float_right slds-m-top_medium" onclick="validateData();">{!$Label.CBM_Save}</button>
+        <button class="slds-button slds-button_brand slds-float_right slds-m-top_medium" onclick="window.history.back();">{!$Label.CBM_Cancel}</button>
+    </div>
+    <script>
+    var assetsLocation = '{!URLFOR($Resource.SLDS252)}';
+    $.aljsInit({
+        assetsLocation: assetsLocation,
+        scoped: false
+    });
+    var oppData;
+    if('{!opportunityData}' != ''){
+        oppData = JSON.parse('{!JSENCODE(opportunityData)}');
+        console.log(oppData);
+        if(oppData.Name != undefined){
+            $('#oppName').text(oppData.Name);
+        }
+        if(oppData.Amount != undefined){
+            $('#oppAmt').text(oppData.Amount);
+        }
+        if(oppData.CBM_Verwendungszweck__r != undefined){
+            $('#oppVerwen').text(oppData.CBM_Verwendungszweck__r.Name);
+        }
+        if(oppData.CBM_Aktionscode__r != undefined){
+            $('#oppAktion').text(oppData.CBM_Aktionscode__r.Name);
+        }
+        if(oppData.npsp__Primary_Contact__r != undefined){
+            $('#oppContact').text(oppData.npsp__Primary_Contact__r.Name);
+        }
+    }
+    console.log('opportunityData',oppData);
+    function handlebarsDataCreation(templateId, data) {
+        var source = $(templateId).html();
+        var template = Handlebars.compile(source);
+        return template(data);
+    }
+    var fieldMaintainId = 3;
+    var totalRows = 2;
+    var disableContactIds = [];
+    function getUID() {
+        return fieldMaintainId++;
+    }
+    function inputToLookup(id,objectName){
+        var defaultData;
+        if(objectName == 'verwen' && '{!JSENCODE(defaultVerwen)}' != ''){
+            defaultData = JSON.parse('{!JSENCODE(defaultVerwen)}');    
+        }else if(objectName == 'aktion' && '{!JSENCODE(defaultAktion)}' != ''){
+            defaultData = JSON.parse('{!JSENCODE(defaultAktion)}');    
+        }else if(objectName == 'contact' && '{!JSENCODE(defaultContact)}' != ''){
+            defaultData = JSON.parse('{!JSENCODE(defaultContact)}');    
+        }else{
+            defaultData = []    
+        }
+        $('#'+id).lookup({
+            filledSearchTermQuery: function(searchTerm,callback) {
+                getLookupData(searchTerm, callback);
+            },
+            emptySearchTermQuery: function(callback) {
+                callback([]);
+            },
+            objectPluralLabel: objectName +'s',
+            objectLabel: objectName,
+            useImgTag: false,
+            objectIconUrl: '/apexpages/slds/latest//assets/icons/standard-sprite/svg/symbols.svg#account',
+            objectIconClass: 'slds-icon-standard-account',
+            initialSelection: defaultData,
+            onClickNew: false,
+            showSearch: false,
+            onChange: function(rec) {
+                if(rec != undefined && rec != null){
+                    $('#'+id).val(rec.id);
+                }
+                else{
+                	$('#'+id).val('');    
+                }
+                if(objectName == 'contact'){
+                    setSelectedContactIds();    
+                }
+            }
+        });
+    }
+    
+    function getLookupData(queryTerm, callback) {
+        var ele = $(':focus');
+        var id = $(ele).attr('id');
+        var objectName = objectMap[id.split('-')[0]];
+        Visualforce.remoting.Manager.invokeAction(
+            'CCG_SplitOpportunityCtlr.getAktions', queryTerm,objectName,disableContactIds,
+            function(result, event) {
+                if (event.status) {
+                    callback(JSON.parse(result.replace(/(&quot\;)/g, '\"')));
+                } else if (event.type === 'exception') {
+                    alert('Exception in getting Aktions');
+                } else {
+                    alert('Anonymous Error occured while getting Aktions');
+                }
+            });
+    }
+    
+    $('#addRow').on('click', function(){
+        var i = getUID();
+        $('#splitResults').append(handlebarsDataCreation('#splitRows', {
+            verwenId: 'splitLookupVerwen-' + i,
+            aktionId: 'splitLookupAktion-' + i,
+            contactId: 'splitLookupContact-' + i,
+            closeRowId: 'closeRow' + i,
+            amountId: 'amountId-' + i
+        }));
+        inputToLookup('splitLookupVerwen-' + i,'verwen');
+        inputToLookup('splitLookupAktion-' + i,'aktion');
+        if(oppData != null && oppData.CBM_QuittungsID__c != undefined && oppData.CBM_QuittungsID__c != ''){
+            inputToLookup('splitLookupContact-' + i,'contact');
+        }
+        else{
+            inputToLookup('splitLookupContact-' + i,'');
+        }
+        totalRows++;
+        setAmount();
+        checkQuintsId();
+    });
+    
+    var objectMap = {};
+    objectMap.splitLookupVerwen = 'Verwendungszweck__c';
+    objectMap.splitLookupAktion = 'CBM_Aktion__c';
+    objectMap.splitLookupContact = 'Contact';
+    
+    function setAmount(){
+        if(oppData != null && oppData.Amount != undefined && oppData.Amount != ''){
+            var amt = oppData.Amount/totalRows;
+            $(".amount").each(function(index) {
+                $(this).val(amt.toFixed(2));    
+            });
+        }		    
+    }
+    
+    $(document).ready(function(){
+        for (var i = 0; i < 2; i++) {
+            $('#splitResults').append(handlebarsDataCreation('#splitRows', {
+                verwenId: 'splitLookupVerwen-' + i,
+                aktionId: 'splitLookupAktion-' + i,
+                contactId: 'splitLookupContact-' + i,
+                closeRowId: 'closeRow-' + i,
+                amountId: 'amountId-' + i
+            }));
+            inputToLookup('splitLookupVerwen-' + i,'verwen');
+            inputToLookup('splitLookupAktion-' + i,'aktion');
+            if(oppData != null && oppData.CBM_QuittungsID__c != undefined && oppData.CBM_QuittungsID__c != ''){
+                inputToLookup('splitLookupContact-' + i,'contact');
+            }
+            else{
+                inputToLookup('splitLookupContact-' + i,'');
+            }
+            setAmount();
+        }
+        checkQuintsId();
+    });
+    
+    function closeRow(selectedElement){
+        if(totalRows == 1){
+            $('#alertHead').html('Alert!');
+            $('#alertContent').html('{!$Label.CCG_One_row_should_be_available}');
+            $('#showAlert').find('[role="alert"]').removeClass(
+                'slds-theme--error slds-theme--success').addClass('slds-theme--warning');
+            $('#showAlert').slideDown('slow');
+            window.setTimeout(function() {
+                $('#showAlert').slideUp('slow');
+            }, 5000);
+        }
+        else{
+            console.log(selectedElement.parent());
+            $(selectedElement).parent().remove();
+            totalRows--;
+            console.log('totalRows : '+ totalRows);
+            setAmount();
+            setSelectedContactIds();
+        }
+    }
+    
+    function checkQuintsId(){
+    	if(oppData != null && oppData.CBM_QuittungsID__c != undefined && oppData.CBM_QuittungsID__c != ''){
+        	$(".amount").each(function(index) {
+                $(this).prop("disabled", true);    
+            });
+            
+            $(".pContactField").each(function() {
+                var parentElement = $(this).parent();
+                var childDiv = parentElement.children('div');
+                $(childDiv).parent().addClass("disablePill");
+                $(this).prop("disabled", true);    
+            });
+        }	    
+    }
+    
+    function validateData(){
+    	if(totalRows > 0){
+            $('#spinner').removeClass('slds-hide');
+            var status = true;
+            var amountList = [];
+            var verwenDataList = [];
+            var aktionDataList = [];
+            var contactDataList = [];
+            var totalEnteredAmt = 0;
+            $(".amount").each(function(index) {
+                if($(this).val() != null && $(this).val() != ''){
+                    amountList.push(Number($(this).val()));
+                    totalEnteredAmt = totalEnteredAmt + Number($(this).val());
+                }
+                else{
+                    showErrorMsg(this);
+                    status = false;
+                }
+            });
+            if(status == true){
+                console.log('oppData.Amount : '+ oppData.Amount);
+                console.log('totalEnteredAmt : '+ totalEnteredAmt);
+                console.log('totalEnteredAmt rounded: '+ Math.round(totalEnteredAmt));
+                if(oppData.Amount != Math.round(totalEnteredAmt)){
+                    status = false;
+                    $('#spinner').addClass('slds-hide');
+                    $('#alertHead').html('Alert!');
+                    $('#alertContent').html('{!$Label.CCG_Sum_of_amount_equals_to_the_opportunity_amount}');
+                    $('#showAlert').find('[role="alert"]').removeClass(
+                        'slds-theme--error slds-theme--success').addClass(
+                        'slds-theme--warning');
+                    $('#showAlert').slideDown('slow');
+                    window.setTimeout(function() {
+                        $('#showAlert').slideUp('slow');
+                    }, 5000);
+                }
+            }
+            if(status == true){
+                $(".verwendungsField").each(function(index) {
+                    if($(this).val() != null && $(this).val() != ''){
+                        verwenDataList.push($(this).val());
+                    }
+                    else{
+                        showErrorMsg(this);
+                        status = false;
+                    }
+                    
+                });
+            }
+            if(status == true){
+                $(".aktionsField").each(function(index) {
+                    if($(this).val() != null && $(this).val() != ''){
+                        aktionDataList.push($(this).val());
+                    }
+                    else{
+                        showErrorMsg(this);
+                        status = false;
+                    }   
+                });
+            }
+            if(status == true){
+                $(".pContactField").each(function(index) {
+                    if($(this).val() != null && $(this).val() != ''){
+                        contactDataList.push($(this).val());
+                    }
+                    else{
+                        showErrorMsg(this);
+                        status = false;
+                    }  
+                });
+            }
+            if(status == true){
+                console.log('valuesss : ');
+                console.log(amountList);
+                console.log(verwenDataList);
+                console.log(aktionDataList);
+                console.log(contactDataList);
+                saveOpportunity(oppData.Id, amountList, verwenDataList, aktionDataList, contactDataList);
+            }
+        }	    
+    }
+    
+    function saveOpportunity(oppId, amountList, verwenDataList, aktionDataList, contactDataList) {
+        Visualforce.remoting.Manager.invokeAction(
+            'CCG_SplitOpportunityCtlr.updateAndCreateOpportunity', oppId,amountList,verwenDataList,aktionDataList,contactDataList,
+            function(result, event) {
+                if (event.status) {
+                	console.log('result : '+ result);
+                    if(result == 'SUCCESS'){
+                        $('#alertHead').html('SUCCESS');
+                        $('#alertContent').html('{!$Label.CCG_Opportunity_Successfully_Created}');
+                        $('#showAlert').find('[role="alert"]').removeClass(
+                            'slds-theme--error slds-theme--warning').addClass(
+                            'slds-theme--success');
+                        $('#showAlert').slideDown('slow');
+                        window.setTimeout(function() {
+                            $('#showAlert').slideUp('slow');
+                            window.open('/'+oppId,'_self');
+                        }, 5000);    
+                    }    
+                } else if (event.type === 'exception') {
+                    $('#spinner').addClass('slds-hide');
+                    alert('Exception in updating Opportunities');
+                } else {
+                    $('#spinner').addClass('slds-hide');
+                    alert('Anonymous Error occured while getting Aktions');
+                }
+            });
+    }
+    
+    function checkAndRemoveErrorMsg(selectedElement){
+        console.log(selectedElement.parent().parent());
+        if($(selectedElement).val() != null && $(selectedElement).val() != ''){
+        	removeErrorMsg(selectedElement);     
+        }
+        else{
+            showErrorMsg(selectedElement);  
+        }
+    }
+    
+    function showErrorMsg(selectedElement){
+        var errorMsgId = 'error-'+ $(selectedElement).attr('id');
+        $(selectedElement).parent().parent().addClass("slds-has-error");
+        $('#'+errorMsgId).removeClass("slds-hide");
+        $('#spinner').addClass('slds-hide');
+    }
+    
+    function removeErrorMsg(selectedElement){
+        $(selectedElement).parent().parent().removeClass("slds-has-error");
+        var errorMsgId = 'error-'+ $(selectedElement).attr('id');
+        console.log('errorMsgId : '+ errorMsgId);
+        $('#'+errorMsgId).addClass("slds-hide");
+    }
+
+    function setSelectedContactIds(){
+        var selctedContactIds = [];
+        $(".pContactField").each(function(index) {
+            if($(this).val() != null && $(this).val() != ''){
+                selctedContactIds.push($(this).val());
+            } 
+        });
+        disableContactIds = selctedContactIds;
+        console.log(disableContactIds);
+    }
+    
+    
+    </script>
+</apex:page>

@@ -1,0 +1,55 @@
+<apex:page showHeader="false" cache="false" applyBodyTag="false" applyHtmlTag="false" standardStylesheets="false" sidebar="false"
+           controller="CCG_CustomNewMassnahmeCtrl">
+    <apex:slds />
+    <div class="slds-scope">
+    <apex:form id="form" style="height: 200px;">
+        <!-- SPINNER -->
+                <div id="spinner" class="slds-spinner_container slds-is-relative" >
+                    <div role="status" class="slds-spinner slds-spinner--large slds-spinner--brand">
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+        <!-- / SPINNER -->
+    </apex:form>
+    </div>
+    
+    <script>
+    setTimeout(function(){ document.getElementById('spinner').className += ' slds-hide' }, 3000);
+    var campaignObj = {!campaignObject};
+    console.log(campaignObj);
+    var defaultValues;
+    
+    if(campaignObj != null && campaignObj != undefined){
+        defaultValues = {'CBM_Fremdliste__c' : campaignObj.CBM_Fremdliste__c,
+                             'CBM_Gehoertzu__c' : (campaignObj.Id != campaignObj) ? campaignObj.Id : '',
+                             'CBM_Affinit_t_Arbeitsbereich__c' :(campaignObj.CBM_Affinit_t_Arbeitsbereich__c != undefined) ? campaignObj.CBM_Affinit_t_Arbeitsbereich__c: '',
+                             'CBM_Affinit_t_Kontinent__c' : (campaignObj.CBM_Affinit_t_Kontinent__c != undefined) ? campaignObj.CBM_Affinit_t_Kontinent__c: '',
+                             'CBM_Affinit_t_Land__c' : (campaignObj.CBM_Affinit_t_Land__c != undefined) ? campaignObj.CBM_Affinit_t_Land__c: '',
+                             'CBM_Status__c' : (campaignObj.Status != undefined) ? campaignObj.Status: '',
+                             'CBM_Verwendungszweck_ALT__c' : (campaignObj.CBM_Verwendungszweck_ALT__c != undefined) ? campaignObj.CBM_Verwendungszweck_ALT__c: '',
+                             'cbm_Verwendungszweck__c' : campaignObj.CBM_Verwendungszweck_1__c,
+                             'CBM_Aussendedatum_PAL__c' : (campaignObj.CBM_Aussendedatum__c != undefined) ? campaignObj.CBM_Aussendedatum__c: null,
+                             'CBM_Link_zu_Muster__c' : (campaignObj.CBM_Link_zu_Muster__c != undefined) ? campaignObj.CBM_Link_zu_Muster__c: null,
+                             'CBM_Aktionstyp__c' : (campaignObj.Type != undefined) ? campaignObj.Type: '',
+                         	 'CBM_Bedankung_Dankbrief__c' : (campaignObj.CBM_Bedankung_Dankbrief__c != undefined) ? campaignObj.CBM_Bedankung_Dankbrief__c: null,
+                         	 'CBM_Bedankung_individueller_Dank__c' : (campaignObj.CBM_Bedankung_individueller_Dank__c != undefined) ? campaignObj.CBM_Bedankung_individueller_Dank__c: null,
+                         	 'CBM_Bedankung_Neuspender_Dankbrief__c' : (campaignObj.CBM_Bedankung_Neuspender_Dankbrief__c != undefined) ? campaignObj.CBM_Bedankung_Neuspender_Dankbrief__c: null,
+                         	 'CBM_Bedankung_Neuspender_Individueller_D__c' : (campaignObj.CBM_Bedankung_Neuspender_Individueller_D__c != undefined) ? campaignObj.CBM_Bedankung_Neuspender_Individueller_D__c: null,
+                         	 'CBM_Bedankung_Postkarte__c' : (campaignObj.CBM_Bedankung_Postkarte__c != undefined) ? campaignObj.CBM_Bedankung_Postkarte__c: null,
+                         	 'CBM_Startdatum__c' : (campaignObj.StartDate != undefined) ? campaignObj.StartDate: null,
+                         	 'CBM_Enddatum__c' : (campaignObj.EndDate != undefined) ? campaignObj.EndDate: null,
+                             'CBM_Bedankung_Vorstand__c' : (campaignObj.CBM_Bedankung_Vorstand__c != undefined) ? campaignObj.CBM_Bedankung_Vorstand__c: false,
+                             'CBM_Bedankung_Format__c' : (campaignObj.CBM_Bedankung_Format__c != undefined) ? campaignObj.CBM_Bedankung_Format__c: '',
+                             'CBM_Bedankung_Kanal__c' : (campaignObj.CBM_Bedankung_Kanal__c != undefined) ? campaignObj.CBM_Bedankung_Kanal__c: ''
+                            };
+    }
+    else{
+    	defaultValues = {};    
+    }
+    
+    sforce.one.navigateToSObject('{!campaignId}', 'related');
+    sforce.one.createRecord("CBM_Massnahme__c", null, defaultValues);
+     	
+    </script>
+</apex:page>

@@ -1,0 +1,325 @@
+<aura:component implements="force:LightningQuickAction,force:hasRecordId,lightning:actionOverride"
+                controller="CCG_CustomNewAktionCtrl">
+    <aura:attribute name="fromRelatedTab" type="Boolean" default="false"/>
+    <aura:attribute name="massnahmeId" type="String" default=""/>
+	<aura:attribute name="recordId" type="String" default=""/>
+    <aura:attribute name="accountId" type="String" default=""/>
+    <aura:attribute name="contactId" type="String" default=""/>
+    <aura:attribute name="selectedRecordTypeId" type="String" default=""/>
+    <aura:attribute name="selectedRecordTypeName" type="String" default=""/>
+	<aura:attribute name="massnahmeObj" type="Object"/>
+    <aura:attribute name="modalHeader" type="String" default="{!$Label.c.CCG_NewAktion}"/>
+    <aura:attribute name="newAktionObj" type="CBM_Aktion__c" default="{'sObjectType':'CBM_Aktion__c', 'Name':'', 'RecordTypeId':'',
+                                                                            'Fremdliste__c':false, 'CBM_Key_Account_Management__c':'',
+                                                                            'CBM_Name_2__c':'', 'CBM_Affinit_t_Arbeitsbereich__c':'',
+                                                                            'CBM_Gehoertzu__c':'', 'CBM_Affinit_t_Kontinent__c':'',
+                                                                            'CBM_Aussendedatum__c':'', 'CBM_Affinit_t_Land__c':'',
+                                                                            'CBM_Korrenspondenzart__c':'', 'CBM_Link_zu_Muster__c':'',
+                                                                            'CBM_Typ__c':'', 'CBM_Aktiv__c':false,
+                                                                            'CBM_Status__c':'', 'CBM_Enddatum__c':'',
+                                                                            'CBM_Startdatum__c':'', 'CBM_Verwendungszweck__c':'',
+                                                                            'CBM_Bedankung_Dankbrief__c':'', 'CBM_Bedankung_individueller_Dank__c':'',
+                                                                            'CBM_Bedankung_Neuspender_Dankbrief__c':'', 'CBM_Bedankung_Neuspender_Individueller_D__c':'',
+                                                                      		'CBM_Bedankung_Postkarte__c':'', 'CBM_Beschreibung__c':'',
+                                                                      		'CBM_Durchschnittliche_Spendengr_e__c':'', 'CBM_Ist_Kosten_Gesamt__c':'',
+                                                                      		'CBM_Gewonnene_Spenden_Anzahl_Ist__c':'', 'CBM_Gewonnene_Spenden_Ist__c':'',
+                                                                            'CBM_Bedankung_Format__c':'', 'CBM_Bedankung_Kanal__c':'',
+                                                                            'CBM_Bedankung_Vorstand__c':false, 'CBM_Veranlasser_Account__c':'',
+                                                                      		'CBM_Veranlasser__c':'', 'CBM_Aktionscode__c':''}"/>
+    <aura:attribute name="showModal" type="Boolean" default="false"/>    
+    <aura:attribute name="showSpinner" type="Boolean" default="true" />
+    <aura:attribute name="showErrorMessageOnGehort" type="Boolean" default="false" />
+    <aura:attribute name="showErrorMessageOnInitiatorAcc" type="Boolean" default="false" />
+    <aura:attribute name="showErrorMessageOnInitiatorCon" type="Boolean" default="false" />
+    <aura:attribute name="selectedLookUpMassnahmeRecord" type="sObject" default="{}"/>
+    <aura:attribute name="selectedLookUpVerwendungszweckRecord" type="sObject" default="{}"/>
+    <aura:attribute name="selectedLookupAccountRecord" type="sObject" default="{}"/>
+    <aura:attribute name="selectedLookupContactRecord" type="sObject" default="{}"/>
+    <aura:attribute name="pickListValMap" type="Map"/>
+    <aura:attribute name="filterMassnahme" type="Boolean" default="false"/>
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:handler name="change" value="{!v.selectedLookUpMassnahmeRecord}" action="{!c.handleMassnahmeChange}"/>
+    <aura:handler name="change" value="{!v.selectedLookupAccountRecord}" action="{!c.handleInitiatorAccChange}"/>
+    <aura:handler name="change" value="{!v.selectedLookupContactRecord}" action="{!c.handleInitiatorConChange}"/>
+    
+    <aura:if isTrue="{!v.showModal}">
+        <div style="height: 640px;">   
+            <section role="dialog" tabindex="-1" aria-modal="true" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container modelContainer">
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
+                                onclick="{!c.closeModel}">
+                            <lightning:icon iconName="utility:close" variant="close"/>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                            <h2 class="slds-text-heading_medium slds-hyphenate">{!v.modalHeader}</h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning:messages />
+                        
+                        <aura:if isTrue="{!v.showSpinner}">
+                            <lightning:spinner alternativeText="Loading" size="medium" />
+                        </aura:if>
+                        
+                        <!--Information Section-->
+                        <div class="slds-section slds-is-open">
+                            <h3 class="slds-section__title slds-theme_shade">
+                                <span class="slds-truncate slds-p-horizontal_small" title="Section Title">{!$Label.c.CCG_Information}</span>
+                            </h3>
+                            <div aria-hidden="false" class="slds-section__content">
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-size_1-of-2 shiftLeft">
+                                        <lightning:input aura:id="aktionName1" label="Aktion Name" required="true" 
+                                                         value="{!v.newAktionObj.Name}"/>         
+                                    </div>
+                                    <div class="slds-size_1-of-2 shiftRight" >
+                                        <lightning:input  aura:id="code" label="Aktionscode"
+                                                                 value = "{!v.newAktionObj.CBM_Aktionscode__c}" /> 
+                                    </div>
+                                    <aura:if isTrue="{!v.selectedRecordTypeName != 'Anlass'}">
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:input aura:id="aktionName2" label="Name 2" 
+                                                             value="{!v.newAktionObj.CBM_Name_2__c}" />
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:select label="Typ" aura:id="typ" 
+                                                              value="{!v.newAktionObj.CBM_Typ__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Typ__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>     
+                                        </div>
+                                    </aura:if>
+                                    <div class="slds-size_1-of-2 shiftLeft">
+                                        <c:CCG_CustomLookup objectAPIName="CBM_Massnahme__c" IconName="standard:account" 
+                                                            selectedRecord="{!v.selectedLookUpMassnahmeRecord}" label="Gehört zu"
+                                                            filterMassnahme="{!v.filterMassnahme}"/>
+                                        <aura:if isTrue="{!v.showErrorMessageOnGehort}">
+                                            <lightning:formattedText value="{!$Label.c.CCG_Required_Field_Error}" class="errorMsg"/>
+                                        </aura:if>
+                                    </div>
+                                    <div class="slds-size_1-of-2 shiftRight">
+                                    	<c:CCG_CustomLookup objectAPIName="Verwendungszweck__c" IconName="standard:account" 
+                                                            selectedRecord="{!v.selectedLookUpVerwendungszweckRecord}" 
+                                                            label="Verwendungszweck"/>	    
+                                    </div>
+                                    <aura:if isTrue="{!v.selectedRecordTypeName != 'Anlass'}">
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:select label="Affinität Arbeitsbereich" aura:id="arbeitsbereich" 
+                                                              value="{!v.newAktionObj.CBM_Affinit_t_Arbeitsbereich__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Affinit_t_Arbeitsbereich__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>    
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:select label="Affinität Kontinent" aura:id="kontinent" 
+                                                              value="{!v.newAktionObj.CBM_Affinit_t_Kontinent__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Affinit_t_Kontinent__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:select label="Status" aura:id="status" 
+                                                              value="{!v.newAktionObj.CBM_Status__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Status__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>       
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:select label="Affinität Land" aura:id="land" 
+                                                              value="{!v.newAktionObj.CBM_Affinit_t_Land__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Affinit_t_Land__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:select label="Korrenspondenzart" aura:id="korrenspondenzart" 
+                                                              value="{!v.newAktionObj.CBM_Korrenspondenzart__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Korrenspondenzart__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>    
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight checkboxArea">
+                                            <lightning:input type="checkbox" aura:id="fremdliste" label="Fremdliste" 
+                                                             name="fremdlisteCheckbox" checked="{!v.newAktionObj.Fremdliste__c}"/>      
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:input type="date" aura:id="aussendedatum" label="Aussendedatum" 
+                                                             value="{!v.newAktionObj.CBM_Aussendedatum__c}"/>   
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight checkboxArea">
+                                            <lightning:input type="checkbox" aura:id="aktiv" label="Aktiv" 
+                                                             name="aktivCheckbox" checked="{!v.newAktionObj.CBM_Aktiv__c}"/>
+                                        </div>
+                                    </aura:if>
+                                    <div class="slds-size_1-of-2 shiftLeft">
+                                        <lightning:input type="date" aura:id="startDatum" label="Startdatum" 
+                                                         value="{!v.newAktionObj.CBM_Startdatum__c}"/>  
+                                    </div>
+                                    <div class="slds-size_1-of-2 shiftRight">
+                                        <lightning:input type="date" aura:id="endDatum" label="Enddatum" 
+                                                         value="{!v.newAktionObj.CBM_Enddatum__c}"/>
+                                    </div>
+                                    <aura:if isTrue="{!v.selectedRecordTypeName != 'Anlass'}">
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:input type="number" aura:id="individuellerDank" label="Bedankung - individueller Dank"
+                                                             value="{!v.newAktionObj.CBM_Bedankung_individueller_Dank__c}" 
+                                                             formatter="currency" step="0.01"/>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:input type="number" aura:id="neuspenderDankbrief" label="Bedankung - Neuspender - Dankbrief"
+                                                             value="{!v.newAktionObj.CBM_Bedankung_Neuspender_Dankbrief__c}" 
+                                                             formatter="currency" step="0.01"/>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:input type="number" aura:id="neuspenderIndividueller" label="Bedankung - Neuspender - Individueller D"
+                                                             value="{!v.newAktionObj.CBM_Bedankung_Neuspender_Individueller_D__c}" 
+                                                             formatter="currency" step="0.01"/>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:input type="number" aura:id="postkarte" label="Bedankung - Postkarte"
+                                                             value="{!v.newAktionObj.CBM_Bedankung_Postkarte__c}" 
+                                                             formatter="currency" step="0.01"/>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:select label="Bedankung - Format" aura:id="bedankungFormat" 
+                                                              value="{!v.newAktionObj.CBM_Bedankung_Format__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Bedankung_Format__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>    
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight checkboxArea">
+                                            <lightning:input type="checkbox" aura:id="bedankungVor" label="Bedankung - Vorstand" 
+                                                             name="bedankungVorstand" checked="{!v.newAktionObj.CBM_Bedankung_Vorstand__c}"/>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:select label="Bedankung - Kanal" aura:id="bedankungKanal" 
+                                                              value="{!v.newAktionObj.CBM_Bedankung_Kanal__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Bedankung_Kanal__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>    
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:input type="number" aura:id="dankbrief" label="Bedankung - Dankbrief"
+                                                             value="{!v.newAktionObj.CBM_Bedankung_Dankbrief__c}" 
+                                                             formatter="currency" step="0.01"/>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.selectedRecordTypeName == 'Anlass'}">
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <c:CCG_CustomLookup objectAPIName="Account" IconName="standard:account" 
+                                                                selectedRecord="{!v.selectedLookupAccountRecord}" 
+                                                                label="Veranlasser (Account)"/>
+                                            <aura:if isTrue="{!v.showErrorMessageOnInitiatorAcc}">
+                                                <lightning:formattedText value="{!$Label.c.CCG_Required_Field_Error}" class="errorMsg"/>
+                                            </aura:if>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <c:CCG_CustomLookup objectAPIName="Contact" IconName="standard:contact" 
+                                                                selectedRecord="{!v.selectedLookupContactRecord}" 
+                                                                label="Veranlasser (Kontakt)"/>
+                                            <aura:if isTrue="{!v.showErrorMessageOnInitiatorCon}">
+                                                <lightning:formattedText value="{!$Label.c.CCG_Required_Field_Error}" class="errorMsg"/>
+                                            </aura:if>
+                                        </div>
+                                    </aura:if>
+                                    <aura:if isTrue="{!v.selectedRecordTypeName != 'Anlass'}">
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:select label="Key Account Management" aura:id="keyAccountMgmt" 
+                                                              value="{!v.newAktionObj.CBM_Key_Account_Management__c}">
+                                                <option text="--None--" value="" selected="--None--"/>
+                                                <aura:iteration items="{!v.pickListValMap.CBM_Key_Account_Management__c}" var="option">
+                                                    <option text="{!option}" value="{!option}"/>
+                                                </aura:iteration>
+                                            </lightning:select>                      
+                                        </div>
+                                        
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:input type="url" aura:id="muster" label="Link zu Muster" 
+                                                             value="{!v.newAktionObj.CBM_Link_zu_Muster__c}" />    
+                                        </div>
+                                    </aura:if>
+                                </div>
+                            </div>
+                        </div>
+                        <!--/Information Section-->
+                        
+                        <!--Beschreibung Section-->
+                        <div class="slds-section slds-is-open">
+                            <h3 class="slds-section__title slds-theme_shade">
+                                <span class="slds-truncate slds-p-horizontal_small" title="Section Title">{!$Label.c.CCG_Beschreibung}</span>
+                            </h3>
+                            <div aria-hidden="false" class="slds-section__content">
+                                <div class="slds-grid slds-wrap">
+                                    <div class="slds-size_1-of-1">
+                                        <lightning:textarea aura:id="beschreibung" label="Beschreibung" 
+                                                            value="{!v.newAktionObj.CBM_Beschreibung__c}"/>    
+                                    </div>
+                                </div>
+                            </div>
+						</div>
+                        <!--Beschreibung Section-->
+                        
+                        
+                        <!--Aktion Ergebnisse Section-->
+                        <aura:if isTrue="{!v.selectedRecordTypeName != 'Anlass'}">
+                            <div class="slds-section slds-is-open">
+                                <h3 class="slds-section__title slds-theme_shade">
+                                    <span class="slds-truncate slds-p-horizontal_small" title="Section Title">{!$Label.c.CCG_AktionErgebnisse}</span>
+                                </h3>
+                                <div aria-hidden="false" class="slds-section__content">
+                                    <div class="slds-grid slds-wrap">
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:input type="number" aura:id="spendengr" label="Durchschnittliche Spendengröße"
+                                                             value="{!v.newAktionObj.CBM_Durchschnittliche_Spendengr_e__c}" 
+                                                             formatter="currency" step="0.01"/>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:input type="number" aura:id="spendenAnzahlIst" label="Gewonnene Spenden - Anzahl (Ist)"
+                                                             value="{!v.newAktionObj.CBM_Gewonnene_Spenden_Anzahl_Ist__c}"/>
+                                        </div>
+                                        <div class="slds-size_1-of-2 shiftLeft">
+                                            <lightning:input type="number" aura:id="spendenIst" label="Gewonnene Spenden (Ist)"
+                                                             value="{!v.newAktionObj.CBM_Gewonnene_Spenden_Ist__c}" 
+                                                             formatter="currency" step="0.01"/>    
+                                        </div>
+                                        
+                                        <div class="slds-size_1-of-2 shiftRight">
+                                            <lightning:input type="number" aura:id="kostenGesamt" label="Ist Kosten Gesamt"
+                                                             value="{!v.newAktionObj.CBM_Ist_Kosten_Gesamt__c}" 
+                                                             formatter="currency" step="0.01"/>    
+                                        </div>
+                                        
+                                    </div>
+                                </div>
+                            </div>
+                        </aura:if>
+                        <!--Aktion Ergebnisse Section-->
+                            
+                        
+                    </div>
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick="{!c.closeModel}">{!$Label.c.CCG_Cancel}</button>
+                        <button class="slds-button slds-button_brand" onclick="{!c.saveRecords}">{!$Label.c.CCG_Save}</button>
+                    </footer>
+                </div>             
+            </section>  
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </div>
+    </aura:if>
+</aura:component>

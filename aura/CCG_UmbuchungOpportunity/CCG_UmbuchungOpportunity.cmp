@@ -1,0 +1,112 @@
+<aura:component controller="CCG_UmbuchungOpportunityController" implements="force:lightningQuickActionWithoutHeader,force:appHostable,flexipage:availableForAllPageTypes,force:hasRecordId">
+    
+    <aura:attribute name="opportunityName" type="String" />
+    <aura:attribute name="amount" type="Decimal" />
+    <aura:attribute name="verwendungszweck" type="String" />
+    <aura:attribute name="aktionCode" type="String" />
+    <aura:attribute name="primaryContact" type="String" />
+    <aura:attribute name="showSpinner" type="Boolean" default="false"/>
+    <aura:attribute name="errorMsg" type="String" default="Fields can not be blank"/>
+    
+    
+    
+    <aura:attribute name="oldOpportunity" type="SObject" />
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    
+    <aura:attribute name="selectedLookUpVerwendungszweckRecord" type="Object" default="{}"/>
+    <aura:attribute name="selectedLookUpAktionsRecord" type="Object" default="{}"/>
+    <aura:attribute name="selectedLookUpPrimaryContactRecord" type="Object" default="{}"/>
+    
+    <aura:attribute name="opportunityRecord" type="object"/>
+    
+    
+    
+    
+    <section role="dialog" style="outline: none;" class="slds-modal slds-fade-in-open">
+        <div class="slds-modal__container" style="width:100% !important;"> 
+            <header class="modal-header slds-modal__header">
+                <lightning:buttonICon class="slds-modal__close" iconName="utility:close" alternativeText="close" variant="bare-inverse" size="large" onclick="{!c.cancelClick}" />
+                <h2 class="title slds-text-heading--medium">{!v.opportunityRecord.opportuntyRecord.Name}</h2>
+            </header>
+            <div class="slds-modal__content slds-p-top--x-large slds-p-around--medium slds-is-relative" style="height: 300px;">
+                
+                <aura:if isTrue="{!v.showSpinner}">
+                    <lightning:spinner alternativeText="Loading" size="large" variant="brand"/>
+                </aura:if>
+                
+                <div id="toastId" class="demo-only slds-hide" style="height: 4rem;">
+                    <div class="slds-notify_container slds-is-relative">
+                        <div class="slds-notify slds-notify_toast slds-theme_warning" role="status">
+                            <span class="slds-assistive-text">warning</span>
+                            <span class="slds-icon_container slds-icon-utility-warning slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+                            </span>
+                            <div class="slds-notify__content">
+                                <h2 class="slds-text-heading_small ">{!v.errorMsg}</h2>
+                            </div>
+                            <div class="slds-notify__close">
+                                <button class="slds-button slds-button_icon slds-button_icon-inverse" title="Close">
+                                 <lightning:buttonICon  iconName="utility:close" alternativeText="close" variant="bare-inverse" size="large" onclick="{!c.cancelToast}" />
+                                    <span class="slds-assistive-text">Close</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col" >
+                        <span> <lightning:input aura:id="amountId"  type="number"
+                                                name="Amount"
+                                                value="{!v.opportunityRecord.opportuntyRecord.Amount}"
+                                                formatter="currency"
+                                                label="Amount:"
+                                                disabled="true">
+                            </lightning:input></span>
+                    </div>
+                </div>
+                <!-- quittungsID ="{!v.opportunityRecord.aktionName.quittungsID}"  quittungsID ="{!v.opportunityRecord.verwendungs.quittungsID}"  quittungsID ="{!v.opportunityRecord.primaryContact.quittungsID}"-->
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col" >
+                        <span>
+                            <c:CCG_CustomLookupForUmbuchungOpportunity objectAPIName="Verwendungszweck__c" IconName="standard:account" 
+                                                                       selectedRecord="{!v.opportunityRecord.verwendungsRecord}"
+                                                                       verwendungsId = "verwendungsId"
+                                                                       label="Verwendungszweck"
+                                                                       pillId="VerwendungszweckId"/> 
+                        </span>
+                    </div>
+                </div>
+                
+                <!--  selectedRecord="{!v.opportunityRecord.verwendungs}"selectedRecord="{!v.opportunityRecord.primaryContact}"   selectedRecord="{!v.opportunityRecord.aktionName}"-->
+                <div class="slds-grid slds-gutters">
+                    <div class="slds-col" >
+                        <span>   
+                            <c:CCG_CustomLookupForUmbuchungOpportunity objectAPIName="CBM_Aktion__c" IconName="standard:account" 
+                                                                       selectedRecord="{!v.opportunityRecord.aktionRecord}"
+                                                                       aktionId ="aktionId"
+                                                                       label="Aktionscode"
+                                                                       pillId="AktionscodeId"/>
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="slds-grid slds-gutters" >
+                    <div class="slds-col" >
+                        <span> 
+                            <c:CCG_CustomLookupForUmbuchungOpportunity objectAPIName="Contact" IconName="standard:account" 
+                                                                       selectedRecord="{!v.opportunityRecord.primaryContactRecord}"  
+                                                                       contactId ="contactId"
+                                                                       label="Primary Contact"
+                                                                       pillId="ContactPillId"/>
+                        </span>
+                    </div>
+                </div>            
+            </div> 
+            <div class="slds-modal__footer"> 
+                <lightning:button label="{!$Label.c.CBM_Cancel}" onclick="{!c.cancelClick}" />
+                <lightning:button variant="brand" label="{!$Label.c.CBM_Save}" onclick="{!c.saveOpportunity}" />
+            </div>
+        </div>
+    </section>   
+    
+</aura:component>

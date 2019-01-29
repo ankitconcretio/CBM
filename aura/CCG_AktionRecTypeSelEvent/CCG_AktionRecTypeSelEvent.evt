@@ -1,0 +1,4 @@
+<aura:event type="APPLICATION" description="pass values from recTypeSelectionCmp to vf page">
+    <aura:attribute name="recTypeId" type="String" access="global" />
+    <aura:attribute name="recTypeName" type="String" access="global" />
+</aura:event>

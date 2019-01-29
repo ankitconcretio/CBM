@@ -1,0 +1,117 @@
+<apex:page showHeader="false" cache="false" applyBodyTag="false" applyHtmlTag="false" standardStylesheets="false" sidebar="false"
+           controller="CCG_CustomNewAktionCtrl">
+    <apex:slds />
+    <apex:includeLightning />
+
+    <div class="slds-scope">
+    <apex:form id="form" style="height: 200px;">
+        <!-- SPINNER -->
+                <div id="spinner" class="slds-spinner_container slds-is-relative" >
+                    <div role="status" class="slds-spinner slds-spinner--large slds-spinner--brand">
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+        <!-- / SPINNER -->
+        
+        <div id="recTypeSelection" />
+    </apex:form>
+    </div>
+    
+    <script>
+    setTimeout(function(){ document.getElementById('spinner').className += ' slds-hide' }, 2000);
+    var recTypeId = '', recTypeName = '';
+    $Lightning.use("c:CCG_AktionRecTypeSelApp", function() {
+        $Lightning.createComponent("c:CCG_CustomAktionRecTypeSelection",
+                                   {fromRelatedTab: true},
+                                   "recTypeSelection",
+                                   function(cmp) {
+                                       console.log('CustomAktionRecTypeSelection created');
+                                       $A.eventService.addHandler({
+                                           event: 'force:navigateToObjectHome',
+                                           handler: function (event) {
+                                               console.log(event.getParam("scope"));
+                                               sforce.one.navigateToSObject('{!massnahmeId}', 'related');
+                                           }
+                                       });
+                                       $A.eventService.addHandler({
+                                           event: 'c:CCG_AktionRecTypeSelEvent',
+                                           handler: function (event) {
+                                               recTypeId = event.getParam("recTypeId");
+                                               recTypeName = event.getParam("recTypeName");
+                                               console.log('recTypeId : '+ recTypeId);
+                                               console.log('recTypeName : '+ recTypeName);
+                                               openNewAktionCmp(recTypeId, recTypeName);
+                                           }
+                                       });
+                                   }
+          );
+    });
+    
+    function openNewAktionCmp(recordTypeId, recordTypeName){
+        console.log('recordTypeId : '+ recordTypeId);
+        if(recordTypeId != '' && recordTypeName != ''){
+            $Lightning.use("c:CCG_AktionRecTypeSelApp", function() {
+                $Lightning.createComponent("c:CCG_CustomNewAktion",
+                                           {fromRelatedTab: true,
+                                            massnahmeObj: {!massnahmeObject},
+                                            selectedRecordTypeId: recordTypeId,
+                                            selectedRecordTypeName: recordTypeName},
+                                           "recTypeSelection",
+                                           function(cmp) {
+                                               console.log('CustomNewAktion created');
+                                               $A.eventService.addHandler({
+                                                   event: 'force:navigateToObjectHome',
+                                                   handler: function (event) {
+                                                       sforce.one.navigateToSObject('{!massnahmeId}', 'related');
+                                                   }
+                                               });
+                                               $A.eventService.addHandler({
+                                                   event: 'force:navigateToSObject',
+                                                   handler: function (event) {
+                                                       var recIdToNavigate = event.getParam("recordId");
+                                                       console.log(recIdToNavigate);
+                                                       sforce.one.navigateToSObject(recIdToNavigate, 'detail');
+                                                   }
+                                               });
+                                           }
+                                          );
+            });
+        }
+        else{
+            sforce.one.navigateToSObject('{!massnahmeId}', 'related');
+        }
+        
+    }
+    /*
+    var massnahmeObj = {!massnahmeObject};    
+    console.log(massnahmeObj);
+    	var defaultValues = {'Fremdliste__c' : massnahmeObj.CBM_Fremdliste__c,
+                             'CBM_Gehoertzu__c' : (massnahmeObj.Id != undefined) ? massnahmeObj.Id : '',
+                             'CBM_Affinit_t_Arbeitsbereich__c' :(massnahmeObj.CBM_Affinit_t_Arbeitsbereich__c != undefined) ? massnahmeObj.CBM_Affinit_t_Arbeitsbereich__c: '',
+                             'CBM_Affinit_t_Kontinent__c' : (massnahmeObj.CBM_Affinit_t_Kontinent__c != undefined) ? massnahmeObj.CBM_Affinit_t_Kontinent__c: '',
+                             'CBM_Affinit_t_Land__c' : (massnahmeObj.CBM_Affinit_t_Land__c != undefined) ? massnahmeObj.CBM_Affinit_t_Land__c: '',
+                             'CBM_Status__c' : (massnahmeObj.CBM_Status__c != undefined) ? massnahmeObj.CBM_Status__c: '',
+                             'CBM_Startdatum__c' : (massnahmeObj.CBM_Startdatum__c != undefined) ? massnahmeObj.CBM_Startdatum__c: null,
+                             'CBM_Enddatum__c' : (massnahmeObj.CBM_Enddatum__c != undefined) ? massnahmeObj.CBM_Enddatum__c : null,
+                             'CBM_Key_Account_Management__c' : (massnahmeObj.CBM_Key_Account_Management__c != undefined) ? massnahmeObj.CBM_Key_Account_Management__c: '',
+                             'CBM_Korrenspondenzart__c' : massnahmeObj.CBM_Korrespondenzart__c,
+                             'CBM_Verwendungszweck__c' : massnahmeObj.cbm_Verwendungszweck__c,
+                             'CBM_Aussendedatum__c' : (massnahmeObj.CBM_Aussendedatum_PAL__c != undefined) ? massnahmeObj.CBM_Aussendedatum_PAL__c: null,
+                             'CBM_Link_zu_Muster__c' : (massnahmeObj.CBM_Link_zu_Muster__c != undefined) ? massnahmeObj.CBM_Link_zu_Muster__c: null,
+                             'CBM_Typ__c' : (massnahmeObj.CBM_Aktionstyp__c != undefined) ? massnahmeObj.CBM_Aktionstyp__c: '',
+                             'CBM_Bedankung_Dankbrief__c' : (massnahmeObj.CBM_Bedankung_Dankbrief__c != undefined) ? massnahmeObj.CBM_Bedankung_Dankbrief__c: null,
+                             'CBM_Bedankung_individueller_Dank__c' : (massnahmeObj.CBM_Bedankung_individueller_Dank__c != undefined) ? massnahmeObj.CBM_Bedankung_individueller_Dank__c: null,
+                             'CBM_Bedankung_Neuspender_Dankbrief__c' : (massnahmeObj.CBM_Bedankung_Neuspender_Dankbrief__c != undefined) ? massnahmeObj.CBM_Bedankung_Neuspender_Dankbrief__c: null,
+                             'CBM_Bedankung_Neuspender_Individueller_D__c' : (massnahmeObj.CBM_Bedankung_Neuspender_Individueller_D__c != undefined) ? massnahmeObj.CBM_Bedankung_Neuspender_Individueller_D__c: null,
+                             'CBM_Bedankung_Postkarte__c' : (massnahmeObj.CBM_Bedankung_Postkarte__c != undefined) ? massnahmeObj.CBM_Bedankung_Postkarte__c: null,
+                             'CBM_Bedankung_Vorstand__c' : (massnahmeObj.CBM_Bedankung_Vorstand__c != undefined) ? massnahmeObj.CBM_Bedankung_Vorstand__c: false,
+                             'CBM_Bedankung_Format__c' : (massnahmeObj.CBM_Bedankung_Format__c != undefined) ? massnahmeObj.CBM_Bedankung_Format__c: '',
+                             'CBM_Bedankung_Kanal__c' : (massnahmeObj.CBM_Bedankung_Kanal__c != undefined) ? massnahmeObj.CBM_Bedankung_Kanal__c: ''
+                            };
+    
+    sforce.one.navigateToSObject(massnahmeObj.Id, 'related');
+    sforce.one.createRecord("CBM_Aktion__c", null, defaultValues);
+    */
+    </script>
+</apex:page>
